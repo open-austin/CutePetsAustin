@@ -1,4 +1,5 @@
 import random
+import urlparse
 
 import arrow
 import requests
@@ -21,18 +22,21 @@ def get_pet_details(url):
     in_db = False
     media = None
 
-    res = requests.get(url)
-    res.raise_for_status()
+    #  http://www.petharbor.com/pet.asp?uaid=ASTN.A685756 => ASTN, A685756
+    params = urlparse.parse_qs(urlparse.urlparse(url).query)
+    uaid = params['uaid'][0]
+    location = uaid.split('.')[0]
+    aid = uaid.split('.')[1]
+    media_url = 'http://www.petharbor.com/get_image.asp?RES=Detail&ID={}&LOCATION={}'.format(aid, location)
 
-    four_oh_four = 'Sorry!  This animal is no longer in our online database.  Please check with the shelter to see about its availability.'
-
-    if four_oh_four in res.content:
-        print 404, url
-    else:
-        print 200, url
-        print res.content
+    try:
+        res = requests.get(media_url)
+        print res.status_code, url
+        res.raise_for_status()
         in_db = True
-        media = 'lalalafind.theurl'  # FIXME: Figure out how to get the image url
+        media = res.content
+    except:
+        pass
 
     return in_db, media
 
@@ -45,19 +49,12 @@ res = requests.get(url)
 res.raise_for_status()
 pets = res.json()
 print 'Found {} pets'.format(len(pets))
-existing_pets = []
 
-for pet in pets:
-    in_db, media = get_pet_details(pet['image_link']['url'])
+lucky = random.choice(pets)
+print 'Chosen one:', lucky
 
-    if in_db:
-        existing_pets.append(pet)
+in_db, media = get_pet_details(lucky['image_link']['url'])
 
-print '{} of {} pets still exist in PetHarbor'.format(len(existing_pets), len(pets))
-
-if existing_pets:
-    lucky = random.choice(existing_pets)
-    latlng = (lucky['found_location']['latitude'], lucky['found_location']['longitude'])
-    status = '{} {} {} {}'.format(lucky['color'], lucky['looks_like'], lucky['type'], lucky['image_link']['url'])
-    print 'Chosen one:', lucky
-    # tweet(status, latlng, media)
+latlng = (lucky['found_location']['latitude'], lucky['found_location']['longitude'])
+status = '{} {} {} {}'.format(lucky['color'], lucky['looks_like'], lucky['type'], lucky['image_link']['url'])
+tweet(status, latlng, media)
