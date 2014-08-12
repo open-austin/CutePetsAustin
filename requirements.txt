@@ -1,0 +1,2 @@
+arrow==0.4.4
+requests-oauthlib==0.4.1
