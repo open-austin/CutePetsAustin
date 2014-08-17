@@ -4,14 +4,13 @@
 import random
 import re
 import urlparse
-from StringIO import StringIO
 
 from bs4 import BeautifulSoup
 import requests
 from requests_oauthlib import OAuth1Session
 
 from credentials import twitter_api_key, twitter_api_secret, twitter_access_token, twitter_access_token_secret
-from constants import shelters, greetings
+from constants import shelters, greetings, greetings_no_name
 
 
 def tweet(status, latlng=None, media=None):
@@ -107,6 +106,9 @@ def parse_petharbor_pet_details(html, pet_id, shelter_id):
     # get the name
     name = soup.find('meta', attrs={'property': 'og:title'})['content']
     name = name.replace('*', '').title()
+    # if name is This Cat/Pet/Other
+    if 'this' in name.lower():
+        name = None
 
     desc_el = soup.select(".DetailDesc")[0]
 
@@ -170,8 +172,15 @@ def main():
 
     print pet_details['name'], pet_details['desc']
 
-    status = '{greeting} {name}. {desc}… {url}'.format(
-        greeting=random.choice(greetings),
+    if pet_details['name']:
+        tweet_format = '{greeting} {name}. {desc}… {url}'
+        greeting = random.choice(greetings)
+    else:
+        tweet_format = '{greeting} {desc}… {url}'
+        greeting = random.choice(greetings_no_name)
+
+    status = tweet_format.format(
+        greeting=greeting,
         name=pet_details['name'],
         desc=pet_details['desc'][:65],
         url=pet_details['url']

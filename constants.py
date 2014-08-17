@@ -20,3 +20,14 @@ greetings = [
     "HI! I'm",
     "HEY! I am"
 ]
+greetings_no_name = [
+    "Hey!",
+    "¡Hola!",
+    "Hey there!",
+    "Hi!",
+    "Hello!",
+    "Howdy!",
+    "Hey.",
+    "HI!",
+    "HEY!"
+]
