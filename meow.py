@@ -1,19 +1,29 @@
-import random
-import urlparse
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-import arrow
+import random
+import re
+import urlparse
+from StringIO import StringIO
+
+from bs4 import BeautifulSoup
 import requests
 from requests_oauthlib import OAuth1Session
 
-from credentials import client_key, client_secret, resource_owner_key, resource_owner_secret
+from credentials import twitter_api_key, twitter_api_secret, twitter_access_token, twitter_access_token_secret
+from constants import shelters, greetings
 
 
-def tweet(status, latlng, media=None):
-    twitter = OAuth1Session(client_key, client_secret, resource_owner_key, resource_owner_secret)
+def tweet(status, latlng=None, media=None):
+    twitter = OAuth1Session(twitter_api_key, twitter_api_secret, twitter_access_token, twitter_access_token_secret)
     url = 'https://api.twitter.com/1.1/statuses/update{}.json'.format('_with_media' if media else '')
-    params = {'status': status, 'lat': latlng[0], 'lon': latlng[1]}
+    params = {'status': status}
+    if latlng:
+        params['lat'] = latlng[0]
+        params['lon'] = latlng[1]
     files = {'media': media} if media else None
     res = twitter.post(url=url, params=params, files=files)
+    print res.content
     res.raise_for_status()
     print res.json()
 
@@ -41,20 +51,135 @@ def get_pet_details(url):
     return in_db, media
 
 
-intake_start_time = arrow.now().format('YYYY-MM-DD')
-intake_end_time = arrow.now().replace(days=1).format('YYYY-MM-DD')  # Doubt there will be a date in the future, but just in case
-url = "http://data.austintexas.gov/resource/5cgv-i2cu.json?$where=intake_type>='{}' AND intake_type<'{}'".format(intake_start_time, intake_end_time)
-print 'GET', url
-res = requests.get(url)
-res.raise_for_status()
-pets = res.json()
-print 'Found {} pets'.format(len(pets))
+def fetch_petharbor_adoptable_pets(shelterlist, where):
+    shelterlist = ','.join(["'{}'".format(s) for s in shelterlist])
+    url = 'http://www.petharbor.com/results.asp'
+    params = {
+        'searchtype': 'ADOPT',
+        'friends': '1',
+        'samaritans': '1',
+        'nosuccess': '0',
+        'orderby': 'Days in Shelter',
+        'rows': '10',
+        'imght': '120',
+        'imgres': 'thumb',
+        'view': 'sysadm.v_austin',
+        'nobreedreq': '1',
+        'bgcolor': 'ffffff',
+        'fontface': 'arial',
+        'fontsize': '10',
+        'col_hdr_bg': '29abe2',
+        'col_hdr_fg': '29abe2',
+        'col_fg': '29abe2',
+        'SBG': 'ffffff',
+        'zip': '78704',
+        'miles': '10',
+        'shelterlist': shelterlist,
+        'atype': '',
+        'where': where,
+        'PAGE': '1',
+    }
+    print 'GET', url
+    res = requests.get(url, params=params)
+    print res.status_code, res.request.url
+    res.raise_for_status()
+    return res.content
 
-lucky = random.choice(pets)
-print 'Chosen one:', lucky
 
-in_db, media = get_pet_details(lucky['image_link']['url'])
+def parse_petharbor_search_results(html):
+    # returns (pet_id, shelter_id)
+    pets = re.findall('ID=(A\d+)&LOCATION=(\w+)&', html)
+    return pets
 
-latlng = (lucky['found_location']['latitude'], lucky['found_location']['longitude'])
-status = '{} {} {} {}'.format(lucky['color'], lucky['looks_like'], lucky['type'], lucky['image_link']['url'])
-tweet(status, latlng, media)
+
+def fetch_petharbor_pet_details(pet_id, shelter_id):
+    url = 'http://www.petharbor.com/pet.asp?uaid={}.{}'.format(shelter_id, pet_id)
+    print 'GET', url
+    res = requests.get(url)
+    print res.status_code, res.request.url
+    res.raise_for_status()
+    return res.content
+
+
+def parse_petharbor_pet_details(html, pet_id, shelter_id):
+    soup = BeautifulSoup(html)
+
+    # get the name
+    name = soup.find('meta', attrs={'property': 'og:title'})['content']
+    name = name.replace('*', '').title()
+
+    desc_el = soup.select(".DetailDesc")[0]
+
+    # remove the font tag, it is the "name - #id" thing
+    desc_el.find_all('font')[0].extract()
+
+    # the rest of the elements are sentences describing the pet
+    desc_children = [str(x) for x in desc_el.children]
+    desc = ' '.join(desc_children)
+    desc = re.sub('(<br>|<br/>|</br>|<BR>|<BR/>|</BR>)', ' ', desc)  # much wow
+    desc = re.sub('\n', ' ', desc)
+    desc = re.sub('\s+', ' ', desc).strip()
+
+    pet_details = {
+        'name': name,
+        'desc': desc,
+        'url': 'http://www.petharbor.com/pet.asp?uaid={}.{}'.format(shelter_id, pet_id)
+    }
+
+    return pet_details
+
+
+def fetch_petharbor_pet_image(pet_id, shelter_id):
+    url = 'http://www.petharbor.com/get_image.asp?RES=Detail&ID={}&LOCATION={}'.format(pet_id, shelter_id)
+    print 'GET', url
+    res = requests.get(url)
+    print res.status_code, res.url
+    res.raise_for_status()
+
+    return res.content
+
+
+def has_tweeted_pet_already(pet_id, shelter_id):
+    return False
+
+
+def choose_pet(pets):
+    random.shuffle(pets)
+    for pet in pets:
+        if not has_tweeted_pet_already(pet[0], pet[1]):
+            return pet
+
+
+def main():
+    old_html = fetch_petharbor_adoptable_pets(shelters, 'age_o')
+    young_html = fetch_petharbor_adoptable_pets(shelters, 'age_y')
+    pet_ids = parse_petharbor_search_results(old_html) + parse_petharbor_search_results(young_html)
+
+    print 'Found {} potential pets: {}'.format(len(pet_ids), pet_ids)
+
+    pet = choose_pet(pet_ids)
+    print 'Chose pet:', pet
+
+    if not pet:
+        print 'All pets have already been tweeted'
+        return
+
+    pet_details_html = fetch_petharbor_pet_details(pet[0], pet[1])
+    pet_details = parse_petharbor_pet_details(pet_details_html, pet[0], pet[1])
+    pet_image = fetch_petharbor_pet_image(pet[0], pet[1])
+
+    print pet_details['name'], pet_details['desc']
+
+    status = '{greeting} {name}. {desc}… {url}'.format(
+        greeting=random.choice(greetings),
+        name=pet_details['name'],
+        desc=pet_details['desc'][:65],
+        url=pet_details['url']
+    )
+
+    print len(status), status
+
+    tweet(status, media=pet_image)
+
+if __name__ == '__main__':
+    main()
