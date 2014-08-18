@@ -2,6 +2,8 @@
 
 A twitter bot that posts a random adoptable pet from PetHarbor.com shelter(s).
 
+To make it work with your city, simply change the `shelters` in `credentials.py`. You can find your shelter ID by inspecting a URL on PetHarbor.com, e.g. Austin = ASTN, and Denver = DNVR.
+
 Forked from [codeforamerica/CutePetsDenver](https://github.com/codeforamerica/CutePetsDenver).
 
 Tweeting at [@cutepetsaustin](https://twitter.com/cutepetsaustin).
