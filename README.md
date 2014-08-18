@@ -26,6 +26,7 @@ Tweeting at [@cutepetsaustin](https://twitter.com/cutepetsaustin).
 
 - Clone the repo `git clone git@github.com:open-austin/CutePetsAustin.git`
 - Configure `credentials.py` with your PetHarbor.com Shelter ID(s), Twitter API Key and Access Token:
+	
 	```py
 	shelters = ['ASTN', 'DNVR']  # PetHarbor.com shelter IDs
 	twitter_api_key = 'XXXXX'
@@ -33,6 +34,7 @@ Tweeting at [@cutepetsaustin](https://twitter.com/cutepetsaustin).
 	twitter_access_token = 'XXXXX'
 	twitter_access_token_secret = 'XXXXX'
 	```
+
 - Optionally, create and activate a [virtual environment](http://virtualenv.readthedocs.org/en/latest/)
 - Install the python dependencies with `pip install -r requirements.txt`
 - Tweet a random adoptable pet with `python meow.py`
