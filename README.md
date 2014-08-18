@@ -45,4 +45,4 @@ Tweeting at [@cutepetsaustin](https://twitter.com/cutepetsaustin).
 
 ## License
 
-GNU GPL V3
+The MIT License (MIT)
