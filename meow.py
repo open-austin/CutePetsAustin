@@ -9,8 +9,37 @@ from bs4 import BeautifulSoup
 import requests
 from requests_oauthlib import OAuth1Session
 
-from credentials import twitter_api_key, twitter_api_secret, twitter_access_token, twitter_access_token_secret
-from constants import shelters, greetings, greetings_no_name
+from credentials import shelters, twitter_api_key, twitter_api_secret, twitter_access_token, twitter_access_token_secret
+
+greetings = [
+    "Hey! I'm",
+    "¡Hola! Me llamo",
+    "Hey there! I'm",
+    "Hi! My name is",
+    "Hello! I am",
+    "Hello! I'm",
+    "Hi! My name's",
+    "I'm",
+    "I am",
+    "They call me",
+    "Call me",
+    "I'm",
+    "Hello, I'm",
+    "Hey, I'm",
+    "HI! I'm",
+    "HEY! I am"
+]
+greetings_no_name = [
+    "Hey!",
+    "¡Hola!",
+    "Hey there!",
+    "Hi!",
+    "Hello!",
+    "Howdy!",
+    "Hey.",
+    "HI!",
+    "HEY!"
+]
 
 
 def tweet(status, latlng=None, media=None):
