@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import json
 import random
 import re
-import urlparse
+from pprint import pprint
 
 from bs4 import BeautifulSoup
 import requests
@@ -50,33 +51,16 @@ def tweet(status, latlng=None, media=None):
         params['lat'] = latlng[0]
         params['lon'] = latlng[1]
     files = {'media': media} if media else None
+
+    print 'POST', url, params
     res = twitter.post(url=url, params=params, files=files)
-    print res.content
+
+    print res.status_code, res.request.url
     res.raise_for_status()
-    print res.json()
+    data = res.json()
+    pprint(data)
 
-
-def get_pet_details(url):
-    in_db = False
-    media = None
-
-    #  http://www.petharbor.com/pet.asp?uaid=ASTN.A685756 => ASTN, A685756
-    params = urlparse.parse_qs(urlparse.urlparse(url).query)
-    uaid = params['uaid'][0]
-    location = uaid.split('.')[0]
-    aid = uaid.split('.')[1]
-    media_url = 'http://www.petharbor.com/get_image.asp?RES=Detail&ID={}&LOCATION={}'.format(aid, location)
-
-    try:
-        res = requests.get(media_url)
-        print res.status_code, url
-        res.raise_for_status()
-        in_db = True
-        media = res.content
-    except:
-        pass
-
-    return in_db, media
+    return data
 
 
 def fetch_petharbor_adoptable_pets(shelterlist, where):
@@ -107,10 +91,13 @@ def fetch_petharbor_adoptable_pets(shelterlist, where):
         'where': where,
         'PAGE': '1',
     }
+
     print 'GET', url
     res = requests.get(url, params=params)
+
     print res.status_code, res.request.url
     res.raise_for_status()
+
     return res.content
 
 
@@ -122,10 +109,13 @@ def parse_petharbor_search_results(html):
 
 def fetch_petharbor_pet_details(pet_id, shelter_id):
     url = 'http://www.petharbor.com/pet.asp?uaid={}.{}'.format(shelter_id, pet_id)
+
     print 'GET', url
     res = requests.get(url)
+
     print res.status_code, res.request.url
     res.raise_for_status()
+
     return res.content
 
 
@@ -164,14 +154,27 @@ def fetch_petharbor_pet_image(pet_id, shelter_id):
     url = 'http://www.petharbor.com/get_image.asp?RES=Detail&ID={}&LOCATION={}'.format(pet_id, shelter_id)
     print 'GET', url
     res = requests.get(url)
+
     print res.status_code, res.url
     res.raise_for_status()
 
     return res.content
 
 
-def has_tweeted_pet_already(pet_id, shelter_id):
-    return False
+def has_tweeted_pet_already(pet_id, shelter_id, tweeted_path='.tweeted.json'):
+    try:
+        with open(tweeted_path) as fh:
+            data = json.loads(fh.read())
+    except IOError:
+        data = {'tweeted': []}
+
+    if [pet_id, shelter_id] in data['tweeted']:
+        return True
+    else:
+        data['tweeted'].append([pet_id, shelter_id])
+        with open(tweeted_path, 'w+') as fh:
+            fh.write(json.dumps(data))
+        return False
 
 
 def choose_pet(pets):
@@ -186,14 +189,15 @@ def main():
     young_html = fetch_petharbor_adoptable_pets(shelters, 'age_y')
     pet_ids = parse_petharbor_search_results(old_html) + parse_petharbor_search_results(young_html)
 
-    print 'Found {} potential pets: {}'.format(len(pet_ids), pet_ids)
+    print 'Found {} potential pets {}'.format(len(pet_ids), pet_ids)
 
     pet = choose_pet(pet_ids)
-    print 'Chose pet:', pet
 
     if not pet:
         print 'All pets have already been tweeted'
         return
+
+    print 'Chose pet', pet
 
     pet_details_html = fetch_petharbor_pet_details(pet[0], pet[1])
     pet_details = parse_petharbor_pet_details(pet_details_html, pet[0], pet[1])
@@ -215,9 +219,10 @@ def main():
         url=pet_details['url']
     )
 
-    print len(status), status
+    print 'Le tweet ({} chars): {}'.format(len(status), status)
 
     tweet(status, media=pet_image)
+
 
 if __name__ == '__main__':
     main()

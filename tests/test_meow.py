@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import json
+import os
 from unittest import TestCase
 
 import meow
@@ -45,3 +47,21 @@ class TestMeow(TestCase):
             'url': 'http://www.petharbor.com/pet.asp?uaid=69.666',
         }
         self.assertEquals(expected, pet_details)
+
+    def test_has_tweeted_pet_already(self):
+        try:
+            os.remove('/tmp/.tweeted.json')
+        except OSError:
+            pass
+
+        self.assertFalse(meow.has_tweeted_pet_already(69, 666, '/tmp/.tweeted.json'))
+        with open('/tmp/.tweeted.json') as fh:
+            self.assertEquals({'tweeted': [[69, 666]]}, json.loads(fh.read()))
+
+        self.assertTrue(meow.has_tweeted_pet_already(69, 666, '/tmp/.tweeted.json'))
+        with open('/tmp/.tweeted.json') as fh:
+            self.assertEquals({'tweeted': [[69, 666]]}, json.loads(fh.read()))
+
+        self.assertFalse(meow.has_tweeted_pet_already(1234, 5678, '/tmp/.tweeted.json'))
+        with open('/tmp/.tweeted.json') as fh:
+            self.assertEquals({'tweeted': [[69, 666], [1234, 5678]]}, json.loads(fh.read()))
