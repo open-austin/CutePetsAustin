@@ -2,7 +2,7 @@
 
 A twitter bot that posts a random adoptable pet from PetHarbor.com shelter(s).
 
-To make it work with your city, simply change the `shelters` in `credentials.py`. You can find your shelter ID by inspecting a URL on PetHarbor.com, e.g. Austin = ASTN, and Denver = DNVR.
+To make it work with your city, simply change the `shelters` in `credentials.py`. You can find your shelter ID by inspecting a URL on PetHarbor.com, e.g. `Austin = ASTN`, and `Denver = DNVR`.
 
 Forked from [codeforamerica/CutePetsDenver](https://github.com/codeforamerica/CutePetsDenver).
 
@@ -26,13 +26,15 @@ Tweeting at [@cutepetsaustin](https://twitter.com/cutepetsaustin).
 
 - Clone the repo `git clone git@github.com:open-austin/CutePetsAustin.git`
 - Configure `credentials.py` with your PetHarbor.com Shelter ID(s), Twitter API Key and Access Token:
-	```py
-	shelters = ['ASTN', 'DNVR']  # PetHarbor.com shelter IDs
-	twitter_api_key = 'XXXXX'
-	twitter_api_secret = 'XXXXX'
-	twitter_access_token = 'XXXXX'
-	twitter_access_token_secret = 'XXXXX'
-	```
+	
+```py
+shelters = ['ASTN', 'DNVR']  # PetHarbor.com shelter IDs
+twitter_api_key = 'XXXXX'
+twitter_api_secret = 'XXXXX'
+twitter_access_token = 'XXXXX'
+twitter_access_token_secret = 'XXXXX'
+```
+
 - Optionally, create and activate a [virtual environment](http://virtualenv.readthedocs.org/en/latest/)
 - Install the python dependencies with `pip install -r requirements.txt`
 - Tweet a random adoptable pet with `python meow.py`
