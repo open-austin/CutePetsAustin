@@ -52,10 +52,10 @@ def tweet(status, latlng=None, media=None):
         params['lon'] = latlng[1]
     files = {'media': media} if media else None
 
-    print 'POST', url, params
+    print('POST', url, params)
     res = twitter.post(url=url, params=params, files=files)
 
-    print res.status_code, res.request.url
+    print(res.status_code, res.request.url)
     res.raise_for_status()
     data = res.json()
     pprint(data)
@@ -92,10 +92,10 @@ def fetch_petharbor_adoptable_pets(shelterlist, where):
         'PAGE': '1',
     }
 
-    print 'GET', url
+    print('GET', url)
     res = requests.get(url, params=params)
 
-    print res.status_code, res.request.url
+    print(res.status_code, res.request.url)
     res.raise_for_status()
 
     return res.content
@@ -110,10 +110,10 @@ def parse_petharbor_search_results(html):
 def fetch_petharbor_pet_details(pet_id, shelter_id):
     url = 'http://www.petharbor.com/pet.asp?uaid={}.{}'.format(shelter_id, pet_id)
 
-    print 'GET', url
+    print('GET', url)
     res = requests.get(url)
 
-    print res.status_code, res.request.url
+    print(res.status_code, res.request.url)
     res.raise_for_status()
 
     return res.content
@@ -152,10 +152,10 @@ def parse_petharbor_pet_details(html, pet_id, shelter_id):
 
 def fetch_petharbor_pet_image(pet_id, shelter_id):
     url = 'http://www.petharbor.com/get_image.asp?RES=Detail&ID={}&LOCATION={}'.format(pet_id, shelter_id)
-    print 'GET', url
+    print('GET', url)
     res = requests.get(url)
 
-    print res.status_code, res.url
+    print(res.status_code, res.url)
     res.raise_for_status()
 
     return res.content
@@ -189,21 +189,21 @@ def main():
     young_html = fetch_petharbor_adoptable_pets(shelters, 'age_y')
     pet_ids = parse_petharbor_search_results(old_html) + parse_petharbor_search_results(young_html)
 
-    print 'Found {} potential pets {}'.format(len(pet_ids), pet_ids)
+    print('Found {} potential pets {}'.format(len(pet_ids), pet_ids))
 
     pet = choose_pet(pet_ids)
 
     if not pet:
-        print 'All pets have already been tweeted'
+        print('All pets have already been tweeted')
         return
 
-    print 'Chose pet', pet
+    print('Chose pet', pet)
 
     pet_details_html = fetch_petharbor_pet_details(pet[0], pet[1])
     pet_details = parse_petharbor_pet_details(pet_details_html, pet[0], pet[1])
     pet_image = fetch_petharbor_pet_image(pet[0], pet[1])
 
-    print pet_details['name'], pet_details['desc']
+    print(pet_details['name'], pet_details['desc'])
 
     if pet_details['name']:
         tweet_format = '{greeting} {name}. {desc}… {url}'
@@ -219,7 +219,7 @@ def main():
         url=pet_details['url']
     )
 
-    print 'Le tweet ({} chars): {}'.format(len(status), status)
+    print('Le tweet ({} chars): {}'.format(len(status), status))
 
     tweet(status, media=pet_image)
 
