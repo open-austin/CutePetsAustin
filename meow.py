@@ -1,16 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import json
 import random
 import re
 from pprint import pprint
 
-from bs4 import BeautifulSoup
 import requests
+from bs4 import BeautifulSoup
 from requests_oauthlib import OAuth1Session
 
 from credentials import shelters, twitter_api_key, twitter_api_secret, twitter_access_token, twitter_access_token_secret
+from tweeted import get_tweeted_from_s3, put_tweeted_to_s3
 
 greetings = [
     "Hey! I'm",
@@ -161,19 +161,14 @@ def fetch_petharbor_pet_image(pet_id, shelter_id):
     return res.content
 
 
-def has_tweeted_pet_already(pet_id, shelter_id, tweeted_path='.tweeted.json'):
-    try:
-        with open(tweeted_path) as fh:
-            data = json.loads(fh.read())
-    except IOError:
-        data = {'tweeted': []}
+def has_tweeted_pet_already(pet_id, shelter_id):
+    data = get_tweeted_from_s3()
 
     if [pet_id, shelter_id] in data['tweeted']:
         return True
     else:
         data['tweeted'].append([pet_id, shelter_id])
-        with open(tweeted_path, 'w+') as fh:
-            fh.write(json.dumps(data))
+        put_tweeted_to_s3(data)
         return False
 
 
